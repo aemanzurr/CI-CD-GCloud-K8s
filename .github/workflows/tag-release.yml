@@ -1,0 +1,44 @@
+name: Tag Release Docker Publish
+
+on:
+  push: 
+    tags: 
+      - '*' 
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest 
+    container:
+      image: google/cloud-sdk:latest 
+
+    steps:
+      - name: Checkout repo   
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud    
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ secrets.GC_PROJECT_ID }}
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Configure Docker with gcloud  
+        run: gcloud auth configure-docker ${{ secrets.GC_REGION }}-docker.pkg.dev
+
+      - name: Build and push image with git tag   
+        run: |
+          IMAGE_TAG=${GITHUB_REF#refs/tags/}
+          IMAGE_NAME="${{ secrets.GC_REGION }}-docker.pkg.dev/${{ secrets.GC_PROJECT_ID }}/technical-challenge/go-webapp-aemr:$IMAGE_TAG"
+          docker build -t "$IMAGE_NAME" .
+          docker push "$IMAGE_NAME"
+
+      - name: Get GKE credentials
+        run: |
+          gcloud container clusters get-credentials ${{ secrets.GC_CLUSTER_NAME }} \
+            --zone ${{ secrets.GC_REGION }} \
+            --project ${{ secrets.GC_PROJECT_ID }}
+
+      - name: Deploy to GKE
+        run: |
+          IMAGE_TAG=${GITHUB_REF#refs/tags/}
+          IMAGE_NAME="${{ secrets.GC_REGION }}-docker.pkg.dev/${{ secrets.GC_PROJECT_ID }}/technical-challenge/go-webapp-aemr:$IMAGE_TAG"
+          kubectl set image deployment/tc-my-app tc-my-app=$IMAGE_NAME

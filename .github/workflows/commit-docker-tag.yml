@@ -1,0 +1,28 @@
+name: Commit Docker Tag
+
+on:
+  push:  
+    branches: 
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  
+
+    steps:
+      - name: Checkout repo   
+        uses: actions/checkout@v3
+
+      - name: Install the gcloud CLI 
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ secrets.GC_PROJECT_ID }} 
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS }}
+
+      - name: Build and push image  
+        run: |
+          gcloud auth configure-docker ${{ secrets.GC_REGION }}-docker.pkg.dev 
+          COMMIT_SHA=${{ github.sha }}
+          IMAGE_NAME="${{ secrets.GC_REGION }}-docker.pkg.dev/${{ secrets.GC_PROJECT_ID }}/technical-challenge/go-webapp-aemr:${COMMIT_SHA}"
+          docker build -t "$IMAGE_NAME" .
+          docker push "$IMAGE_NAME"

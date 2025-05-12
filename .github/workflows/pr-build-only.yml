@@ -1,0 +1,21 @@
+name: Build PR Docker Image
+
+on:
+  pull_request: 
+    branches:
+      - main  
+    types: [opened, synchronize, reopened] 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest 
+
+    steps:
+      - name: Checkout repo 
+        uses: actions/checkout@v3
+
+      - name: Build Docker image 
+        run: |
+          COMMIT_SHA=${{ github.sha }}
+          IMAGE_TAG="pr-${COMMIT_SHA}"
+          docker build -t go-webapp-aemr:$IMAGE_TAG .
