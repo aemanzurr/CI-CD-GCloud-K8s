@@ -1,4 +1,4 @@
-name: Commit Docker Tag
+name: Commit Docker image with hash tag
 
 on:
   push:  
