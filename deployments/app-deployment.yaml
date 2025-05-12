@@ -1,0 +1,60 @@
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tc-my-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tc-my-app
+  template:
+    metadata:
+      labels:
+        app: tc-my-app
+    spec:
+      containers:
+        - name: tc-my-app
+          image: us-central1-docker.pkg.dev/neon-effect-459412-p7/technical-challenge/go-webapp-aemr:66ecaccc62263bc156700dbf0389b5adae47e7c6
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+---
+
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-app-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: tc-my-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+
+---
+
+# HorizontalPodAutoscaler
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: my-app-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: tc-my-app
+  minReplicas: 2
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 60
+
