@@ -1,196 +1,129 @@
-# go-webapp-sample
+# DevOps Pipeline with GitHub Actions, GKE & GitOps
 
-[![license](https://img.shields.io/github/license/ybkuroki/go-webapp-sample?style=for-the-badge)](https://github.com/ybkuroki/go-webapp-sample/blob/master/LICENSE)
-[![report](https://goreportcard.com/badge/github.com/ybkuroki/go-webapp-sample?style=for-the-badge)](https://goreportcard.com/report/github.com/ybkuroki/go-webapp-sample)
-[![workflow](https://img.shields.io/github/actions/workflow/status/ybkuroki/go-webapp-sample/check.yml?label=check&logo=github&style=for-the-badge)](https://github.com/ybkuroki/go-webapp-sample/actions?query=workflow%3Acheck)
-[![release](https://img.shields.io/github/release/ybkuroki/go-webapp-sample?style=for-the-badge&logo=github)](https://github.com/ybkuroki/go-webapp-sample/releases)
+This project implements a complete **GitOps CI/CD workflow** for deploying a containerized application to **Google Kubernetes Engine (GKE)** using **GitHub Actions**, **Artifact Registry**, and plain Kubernetes YAML manifests.
 
-## Preface
-This repository is the sample of web application using golang.
-This sample uses [Echo](https://echo.labstack.com/) as web application framework, [Gorm](https://gorm.io/) as OR mapper and [Zap logger](https://pkg.go.dev/go.uber.org/zap) as logger.
-This sample application provides only several functions as Web APIs.
-Please refer to the 'Service' section about the detail of those functions.
+---
 
-Also, this application contains the static contents such as html file, css file and javascript file which built [vuejs-webapp-sample](https://github.com/ybkuroki/vuejs-webapp-sample) project to easily check the behavior of those functions.
-So, you can check this application without starting a web server for front end.
-Please refer to the 'Starting Server' section about checking the behavior of this application.
+##  What’s Included
 
-If you would like to develop a web application using golang, please feel free to use this sample.
+- GitHub Actions for CI/CD automation  
+- Dockerized application  
+- Push to **Artifact Registry** with Git tags and commit hashes  
+- Deployment to GKE using **kubectl**  
+- Horizontal Pod Autoscaling  
+- Resource constraints for reliability  
+- Public exposure via **LoadBalancer**
 
-## Install
-Perform the following steps:
-1. Download and install [Visual Studio Code(VS Code)](https://code.visualstudio.com/).
-1. Download and install [Golang](https://golang.org/).
-1. Get the source code of this repository by the following command.
-    ```bash
-    go install github.com/ybkuroki/go-webapp-sample@latest
-    ```
+---
 
-## Starting Server
-There are 2 methods for starting server.
+## CI/CD Workflow
 
-### Without Web Server
-1. Starting this web application by the following command.
-    ```bash
-    go run main.go
-    ```
-1. When startup is complete, the console shows the following message:
-    ```
-    http server started on [::]:8080
-    ```
-1. Access [http://localhost:8080](http://localhost:8080) in your browser.
-1. Login with the following username and password.
-    - username : ``test``
-    - password : ``test``
+| Event in GitHub         | Action                                                                 |
+|-------------------------|------------------------------------------------------------------------|
+| Commit to `main`        | Build Docker image, tag with **commit hash**, and **push** to registry |
+| Pull Request to `main`  | Build Docker image (**do not push**) – for validation only             |
+| Git Tag (e.g. `v1.0.0`) | Build image, tag with **git tag**, and **push** to registry            |
 
-### With Web Server
-#### Starting Application Server
-1. Starting this web application by the following command.
-    ```bash
-    go run main.go
-    ```
-1. When startup is complete, the console shows the following message:
-    ```
-    http server started on [::]:8080
-    ```
-1. Access [http://localhost:8080/api/health](http://localhost:8080/api/health) in your browser and confirm that this application has started.
-    ```
-    healthy
-    ```
-#### Starting Web Server
-1. Clone [vuejs-webapp-sample](https://github.com/ybkuroki/vuejs-webapp-sample) project and install some tools.
-1. Start by the following command.
-    ```bash
-    npm run dev
-    ```
-1. When startup is complete, the console shows the following message:
-    ```
-    > vuejs-webapp-sample@*.*.* dev
-    > vite --mode development
-    
-    
-    VITE v*.*.*  ready in 1362 ms
-    
-    ➜  Local:   http://localhost:3000/
-    ➜  press h to show help
-    ```
-1. Access [http://localhost:3000](http://localhost:3000) in your browser.
-1. Login with the following username and password.
-    - username : ``test``
-    - password : ``test``
+Workflows are managed using GitHub Actions in `.github/workflows/`.
 
-### With Docker
-#### building Docker image
-1. Run the below following commands:
-    ```bash
-    docker build -t go-webapp-sample .
-    ```
-2. command to start the container at port 8080
-    ```bash
-    docker run --name app -p 8080:8080 go-webapp-sample
-    ``` 
-3. Access [http://localhost:8000](http://localhost:8080) in your browser.
-4. Login with the following username and password.
-    - username : ``test``
-    - password : ``test`` 
+---
 
-## Using Swagger
-In this sample, Swagger is enabled only when executed this application on the development environment.
-Swagger isn't enabled on the another environments in default.
+## Kubernetes on Google Cloud (GKE)
 
-### Accessing to Swagger
-1. Start this application according to the 'Starting Application Server' section.
-2. Access [http://localhost:8080/swagger/index.html](http://localhost:8080/swagger/index.html) in your browser.
+- **Cluster type:** Zonal  
+- **Machine type:** `n1-standard-1`  
+- **Node type:** Preemptible (for low cost)  
+- **Initial size:** 1 node  
+- **Autoscaling:** Enabled (2–3 replicas via HPA)
 
-### Updating the existing Swagger document
-1. Update some comments of some controllers.
-2. Download Swag library. (Only first time)
-    ```bash
-    go install github.com/swaggo/swag/cmd/swag@latest
-    ```
-3. Update ``docs/docs.go``.
-    ```bash
-    swag init
-    ```
+---
 
-## Build executable file
-Build this source code by the following command.
-```bash
-go build main.go
-```
+## Autoscaling & Resource Limits
 
-## Project Map
-The following figure is the map of this sample project.
+Defined in `deployments/app-deployment.yaml`:
+- **CPU/Memory Requests and Limits**
+- **Horizontal Pod Autoscaler** scales pods between 2 and 3 replicas based on CPU utilization.
 
-```
-- go-webapp-sample
-  + config                  … Define configurations of this system.
-  + logger                  … Provide loggers.
-  + middleware              … Define custom middleware.
-  + migration               … Provide database migration service for development.
-  + router                  … Define routing.
-  + controller              … Define controllers.
-  + model                   … Define models.
-  + repository              … Provide a service of database access.
-  + service                 … Provide a service of book management.
-  + session                 … Provide session management.
-  + test                    … for unit test
-  - main.go                 … Entry Point.
-```
+---
 
-## Services
-This sample provides 3 services: book management, account management, and master management.
-Regarding the detail of the API specification, please refer to the 'Using Swagger' section.
+## Public Access
 
-### Book Management
-There are the following services in the book management.
+The application is exposed via a `Service` of type `LoadBalancer`, which automatically provisions a public external IP.
 
-|Service Name|HTTP Method|URL|Parameter|Summary|
-|:---|:---:|:---|:---|:---|
-|Get Service|GET|``/api/books/[BOOK_ID]``|Book ID|Get a book data.|
-|List/Search Service|GET|``/api/books?query=[KEYWORD]&page=[PAGE_NUMBER]&size=[PAGE_SIZE]``|Page, Keyword(Optional)|Get a list of books.|
-|Regist Service|POST|``/api/books``|Book|Regist a book data.|
-|Edit Service|PUT|``/api/books``|Book|Edit a book data.|
-|Delete Service|DELETE|``/api/books``|Book|Delete a book data.|
+---
 
-### Account Management
-There are the following services in the Account management.
+## Docker & Artifact Registry
 
-|Service Name|HTTP Method|URL|Parameter|Summary|
-|:---|:---:|:---|:---|:---|
-|Login Service|POST|``/api/auth/login``|Session ID, User Name, Password|Session authentication with username and password.|
-|Logout Service|POST|``/api/auth/logout``|Session ID|Logout a user.|
-|Login Status Check Service|GET|``/api/auth/loginStatus``|Session ID|Check if the user is logged in.|
-|Login Username Service|GET|``/api/auth/loginAccount``|Session ID|Get the login user's username.|
+Docker images are:
+- **Built** in GitHub Actions  
+- **Tagged** with either:  
+  - Git commit SHA (for `main` commits)  
+  - Git tag (for releases)  
+- **Pushed** to Google **Artifact Registry**
 
-### Master Management
-There are the following services in the Master management.
+---
 
-|Service Name|HTTP Method|URL|Parameter|Summary|
-|:---|:---:|:---|:---|:---|
-|Category List Service|GET|``/api/categories``|Nothing|Get a list of categories.|
-|Format List Service|GET|``/api/formats``|Nothing|Get a list of formats.|
+## Secrets and Authentication
 
-## Tests
-Create the unit tests only for the packages such as controller, service, model/dto and util. The test cases is included the regular cases and irregular cases. Please refer to the source code in each packages for more detail.
+GitHub Secrets store credentials securely:
+- `GCP_SA_KEY`: Base64-encoded GCP Service Account JSON  
+- `GCP_PROJECT`: Your GCP project ID  
+- `GCP_REGION`: e.g. `us-central1`  
+- `GCP_CLUSTER`: Name of your GKE cluster  
+- `GCP_ZONE`: e.g. `us-central1-a`
 
-The command for testing is the following:
-```bash
-go test ./... -v
-```
+These secrets are used in GitHub Actions to authenticate with GCP and Artifact Registry.
 
-## Libraries
-This sample uses the following libraries.
+---
 
-|Library Name|Version|
-|:---|:---:|
-|echo|4.11.4|
-|gorm|1.25.9|
-|go-playground/validator.v9|9.31.0|
-|zap|1.26.0|
+## 🚀 How to Deploy This Project Yourself
 
-## Contribution
-Please read [CONTRIBUTING.md](https://github.com/ybkuroki/go-webapp-sample/blob/master/CONTRIBUTING.md) for proposing new functions, reporting bugs and submitting pull requests before contributing to this repository.
+### 1. Clone the Repository
 
-## License
-The License of this sample is *MIT License*.
+``bash
+git clone https://github.com/[USERNAME]/[YOUR_REPO].git
+cd [YOUR_REPO]
+
+### 2. Enable GCP Services
+
+gcloud services enable containerregistry.googleapis.com \
+    container.googleapis.com \
+    artifactregistry.googleapis.com
+
+### 3. Create a GKE Cluster
+
+gcloud container clusters create [CLUSTER_NAME] \
+    --zone [ZONE] \
+
+### 4. Create an Artifact Registry Repository
+
+gcloud artifacts repositories create [REPO_NAME] \
+    --repository-format=docker \
+    --location=[ZONE] \
+    --description="[DESCRIPTION]"
+
+### 5. Configure GitHub Secrets
+
+
+In your GitHub repo, go to **Settings > Secrets and variables > Actions**, and add:
+
+| Secret Name     | Description                                 |
+|------------------|---------------------------------------------|
+| `GCP_SA_KEY`     | Base64 of GCP Service Account JSON          |
+| `GCP_PROJECT`    | Your Google Cloud Project ID                |
+| `GCP_REGION`     | GCP region (e.g. `us-central1`)             |
+| `GCP_CLUSTER`    | Your GKE cluster name                       |
+| `GCP_ZONE`       | GCP compute zone (e.g. `us-central1-a`)     |
+
+### 6. Push Code and Let CI/CD Run
+
+Once everything is in place:
+
+- Push to main to trigger build + deploy.
+
+- Open a PR to test image build.
+
+- Push a Git tag to release and deploy a specific version.
+
+
+
